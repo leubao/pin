@@ -1,0 +1,9 @@
+.idea
+composer.lock
+*.log
+thinkphp
+html
+database.php
+.user.ini
+LICENSE.txt
+.htaccess
