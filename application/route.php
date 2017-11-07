@@ -17,5 +17,6 @@ return [
         ':id'   => ['index/hello', ['method' => 'get'], ['id' => '\d+']],
         ':name' => ['index/hello', ['method' => 'post']],
     ],
-
+    'login' 	=> ['channel/index/login', ['method' => 'get']],
+    'dologin'	=> ['channel/index/dologin', ['method' => 'post']]
 ];
