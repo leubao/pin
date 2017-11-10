@@ -238,4 +238,6 @@ return [
         'var_page'  => 'page',
         'list_rows' => 15,
     ],
+    //系统安全常量 zj
+    'AUTHCODE' => 'VNANVF1rFpBMqduRYVNpy1rEMTEBP%ZA',
 ];

@@ -8,11 +8,15 @@
 // +----------------------------------------------------------------------
 namespace app\common\controller;
 use app\common\controller\LubRDF;
+use app\common\libs\service\Partner;
 class Channel extends LubRDF
 {
 	public function _initialize()
 	{
 		//登录验证 权限验证
-		
+		$partner = new Partner();
+		if(!$partner->isLogin()){
+			$this->redirect('channel/index/login');
+		}
 	}
 }

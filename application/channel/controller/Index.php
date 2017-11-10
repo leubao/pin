@@ -8,6 +8,7 @@
 // +----------------------------------------------------------------------
 namespace app\channel\controller;
 use app\common\controller\LubRDF;
+use app\common\libs\service\Partner;
 class Index extends LubRDF
 {
 	/**
@@ -29,14 +30,17 @@ class Index extends LubRDF
      */
     public function login()
     {
+    	$partner = new Partner();
+    	if($partner->isLogin()){
+			$this->redirect('channel/home/index');
+		}
     	return $this->fetch();
     }
     //退出登陆
     public function logout() {
-        if (Partner::getInstance()->logout()) {
-            //手动登出时，清空forward
-            cookie("forward", NULL);
-            $this->success('注销成功！', U("Home/Public/login"));
+    	$partner = new Partner();
+        if ($partner->logout()) {
+            $this->success('注销成功！', url("channel/index/login"));
         }
     }
     /**
@@ -47,8 +51,8 @@ class Index extends LubRDF
      */
     public function dologin()
     {
-    	$partner = new \app\common\libs\service\Partner();
-    	if($partner->login($this->param['username'], '')){
+    	$partner = new Partner();
+    	if($partner->login($this->param['username'], $this->param['password'])){
     		return json(['status'=>true,'code'=>10001,'msg'=>'登录成功']);
     	}else{
     		return json(['status'=>false,'code'=>10003,'msg'=>$partner->error]);

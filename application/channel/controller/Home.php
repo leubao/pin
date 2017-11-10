@@ -18,7 +18,7 @@ class Home extends Channel
 	 */
     public function index()
     {
-    	dump(url('channel/index/login','','html',true));
+    	//dump(url('channel/index/login','','html',true));
         return $this->fetch();
     }
 }

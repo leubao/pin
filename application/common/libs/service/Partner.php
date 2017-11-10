@@ -1,6 +1,6 @@
 <?php
 // +----------------------------------------------------------------------
-// | LubRDF 用户登录控制器
+// | LubRDF 用户操作类
 // +----------------------------------------------------------------------
 // | Copyright (c) 2017 http://www.leubao.com, All rights reserved.
 // +----------------------------------------------------------------------
@@ -9,7 +9,8 @@
 namespace app\common\libs\service;
 use think\Session;
 use app\common\libs\util\Encrypt;
-class Partner
+use app\channel\model\User;
+class Partner extends \app\common\libs\service\Service
 {
     public $error = '';
 	/**
@@ -31,7 +32,9 @@ class Partner
      */
     public function isLogin() {
         $userId = Encrypt::openssl_authcode(Session::get('userId'),'DECODE');
-        if (empty($userId)) {
+        //查询缓存是否存在 
+        $uinfo = json_decode(load_redis('get',Session::get('userId')));
+        if (empty($userId) || empty($uinfo)) {
             return false;
         }
         return (int) $userId;
@@ -47,8 +50,8 @@ class Partner
         $uInfo = $this->getuInfo($identifier, $password);
         if (false == $uInfo) {
             //记录登录日志
-            //$this->record($identifier, $password, 0);
-            
+            $this->record($identifier, $password, 0, $this->error);
+            $this->error = "用户名或密码错误";
             return false;
         }
         //记录登录日志
@@ -69,46 +72,55 @@ class Partner
         }
         return false;
     }
-
-    /**
-     * 注销登录状态
-     * @return boolean
-     */
-    public function logout() {
-       // session('[destroy]');
-      //  return true;
-    }
-
     /**
      * 记录登陆日志
      * @param type $identifier 登陆方式，uid,username
      * @param type $password 密码
      * @param type $status 
      */
-    private function record($identifier, $password, $status = 0) {
+    private function record($identifier, $password, $status = 0, $info = '') {
         //登录日志
-        model('Channel/Loginlog')->addLoginLogs(array(
+        $model = new \app\channel\model\Loginlog();
+        $model->addLoginLogs(array(
        	 	"is_scene" => '3',
             "username" => $identifier,
             "status" => $status,
             "password" => $status ? '密码保密' : $password,
-            "info" => is_int($identifier) ? '用户ID登录' : '用户名登录',
+            "info" => empty($info) ? is_int($identifier) ? '用户ID登录' : '用户名登录' : $info,
         ));
     }
     /**
      * 注册用户登录状态
      * @param array $uInfo 用户信息
      */
-    private function registerLogin(array $uInfo) {
+    private function registerLogin($uInfo) {
         //写入session
-        session(self::UidKey, \Libs\Util\Encrypt::authcode((int) $uInfo['id'], ''));
-        Session::set('userId', Encrypt::openssl_authcode((int) $uInfo['id']));
+        $session = Encrypt::openssl_authcode((int) $uInfo['id'],'ENCODE');
+        Session::set('userId', $session);
         //更新状态
-        //D('Home/User')->loginStatus((int) $uInfo['id']);
+        $model = new User();
+        $model->loginStatus((int) $uInfo['id']);
+        //缓存配置信息
+        load_redis('setex',$session, json_encode($uInfo), 3600);
         //注册权限
         //\Home\Service\RBAC::saveAccessList((int) $uInfo['id']);
     }
-
+    /**
+     * 注销登录
+     * @Company  承德乐游宝软件开发有限公司
+     * @Author   zhoujing      <zhoujing@leubao.com>
+     * @DateTime 2017-11-06
+     * @param    string        $value                [description]
+     * @return   [type]                              [description]
+     */
+    public function logout()
+    {
+        //销毁session
+        Session::clear();
+        //销毁redis
+        load_redis('delete',Session::get('userId'));
+        return true;
+    }
     /**
      * 获取用户信息
      * @param type $identifier 用户名或者用户ID
@@ -118,6 +130,13 @@ class Partner
         if (empty($identifier)) {
             return false;
         }
-        return model('Channel/User')->getuInfo($identifier, $password);
+        $model = new User();
+        $uInfo = $model->getuInfo($identifier, $password);
+        if($uInfo){
+            return $uInfo;
+        }else{
+            $this->error = $model->getError();
+            return false;
+        }
     }
 }

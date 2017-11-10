@@ -10,55 +10,50 @@ namespace app\channel\model;
 
 use think\Model;
 use think\Session;
-use app\common\
+use think\Db;
 class User extends Model
 {
-	public function getuInfo($username = '', $password = '')
+	public function getuInfo($identifier = '', $password = '')
 	{
 		if (empty($identifier)) {
             return false;
         }
-        $map = [];
-        $map['is_scene'] = 3;
-        $map['staus'] = '1';
-        $uInfo = $this->where($map)->find();
+        $uInfo = $this->where('username', $identifier)
+        			  ->where('is_scene', 3)
+        			  ->where('status', 1)
+        			  ->field('id,username,password,verify,role_id,cid,groupid')->relation(['crm_group','crm'])->find();
         if (empty($uInfo)) {
+        	$this->error = "账号不存在";
             return false;
         }
-        //密码验证
-        if (!empty($password) && $this->hashPassword($password, $uInfo['verify']) != $uInfo['password']) {
+        //密码验证->toArray()
+        if (!empty($password) && $this->hashPassword($password, $uInfo->verify) != $uInfo->password) {
+        	$this->error = "密码错误";
             return false;
         }
+        return $uInfo->toArray();
 	}
 	/**
-	 * 用户登录
+	 * 会员组信息
 	 * @Company  承德乐游宝软件开发有限公司
 	 * @Author   zhoujing      <zhoujing@leubao.com>
-	 * @DateTime 2017-11-06
-	 * @param    string        $username             用户名
-	 * @param    string        $password             密码
-	 * @return   [type]                              [description]
+	 * @DateTime 2017-11-09
+	 * @return   [type]        [description]
 	 */
-	public function login($username = '', $password = '')
+	public function crmGroup()
 	{
-		//查询用户
-		//比对密码
-		//缓存用户登录信息
-		//返回结果
+		return $this->belongsTo('CrmGroup','groupid')->field('id,name,price_group,type,settlement');
 	}
 	/**
-	 * 注销登录
+	 * 商户信息
 	 * @Company  承德乐游宝软件开发有限公司
 	 * @Author   zhoujing      <zhoujing@leubao.com>
-	 * @DateTime 2017-11-06
-	 * @param    string        $value                [description]
-	 * @return   [type]                              [description]
+	 * @DateTime 2017-11-09
+	 * @return   [type]        [description]
 	 */
-	public function logout()
+	public function crm()
 	{
-		//销毁session
-		Session::clear();
-		return true;
+		return $this->belongsTo('Crm','cid')->field('id,name,groupid,cash,level,agent,f_agents,param');
 	}
 	/**
      * 对明文密码，进行加密，返回加密后的密文密码
@@ -75,10 +70,10 @@ class User extends Model
      * @return type
      */
     public function loginStatus($userId) {
-        $this->find((int) $userId);
-        $this->last_login_time = time();
-        $this->last_login_ip = get_client_ip();
-        return $this->save();
+		return $this->update([
+		    'last_login_time'  => time(),
+		    'last_login_ip'    => get_client_ip(),
+		],['id'=>(int) $userId]);
     }
     /**
      * 插入成功后的回调方法

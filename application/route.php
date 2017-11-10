@@ -17,6 +17,8 @@ return [
         ':id'   => ['index/hello', ['method' => 'get'], ['id' => '\d+']],
         ':name' => ['index/hello', ['method' => 'post']],
     ],
+    'index'		=> ['channel/home/index', ['method' => 'get']],
     'login' 	=> ['channel/index/login', ['method' => 'get']],
+    'logout' 	=> ['channel/index/logout', ['method' => 'get']],
     'dologin'	=> ['channel/index/dologin', ['method' => 'post']]
 ];
